@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h> 
-#include<unistd.h>
+#include <unistd.h>
+#include<sys/wait.h>
 int main() {
     pid_t pid = fork();
     if(pid < 0){ 
@@ -8,13 +9,10 @@ int main() {
         return 1; 
     }
     else if(pid == 0){
-        printf("child[%d] is begin Z...\n", getpid());
         sleep(5); 
         exit(EXIT_SUCCESS);  
     }
-    else{
-        printf("parent[%d] is sleeping...\n", getpid());
-        sleep(10); 
-    }
+    printf("父进程被wait()阻塞, 等待子进程退出并回收\n");
+    wait(NULL);
     return 0; 
 }
