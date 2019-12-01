@@ -22,11 +22,12 @@ int main(int argc, char *argv[])
     //execl("/bin/ls", "ls", "-l", NULL);
     //execlp("myenv", "myenv", "-l", NULL);
     //execle("./myenv", "myenv", "-l", NULL, env);
-    char *arg[3] = {NULL};
+    char *arg[4] = {NULL};
     arg[0] = "myenv";
     arg[1] = "-i";
-    arg[2] = NULL;
-    execv("./myenv", arg);
+    arg[2]="-b";
+    arg[3] = NULL;
+    execv("./myenv", argv);
     printf("hello ~~\n");
     return 0;
 }
