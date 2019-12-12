@@ -1,7 +1,11 @@
 #include<stdio.h>
 #include<string.h>
 int main(){
+<<<<<<< HEAD
     FILE* fp = fopen("myfile.txt", "w+");
+=======
+    FILE* fp = fopen("~\\Linux\\IO\\myfile.txt", "w+");
+>>>>>>> 1df5dfe4a86bb789f31b98a4721d8e9585665ca9
     if(fp == NULL){
         printf("打开失败\n");
         return -1;
