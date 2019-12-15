@@ -8,7 +8,7 @@ int main(){
     // int kill(pid_t pid, int signum)
     //*kill(getpid(), SIGQUIT);
     //raise(SIGTERM);
-    abort();
+    //abort();
     //alarm(3);
     while(1) {
         printf("hello\n");
