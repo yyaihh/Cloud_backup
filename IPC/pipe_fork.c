@@ -14,9 +14,9 @@ int main(){
     }
     else if(pid == 0){
         char buf[100];
-        int len;
+        int len, n = 3;
         close(pfd[0]);
-        while(fgets(buf, 100, stdin)){
+        while(n-- && fgets(buf, 100, stdin)){
             len = strlen(buf);
             printf("子进程将所输字符串写入管道\n");
             if(write(pfd[1], buf, len) != len){
@@ -24,12 +24,13 @@ int main(){
             } 
             usleep(100);
         }
+        close(pfd[1]);
     }
     else{
         char buf[100];
-        int len;
+        int len, n = 3;
         close(pfd[1]);
-        while(1){
+        while(n--){
             usleep(100);
             if((len = read(pfd[0], buf, 100)) == -1){
                perror("read from pipe");
@@ -37,6 +38,7 @@ int main(){
             write(1, buf, len);
             printf("父进程从管道读出字符串, 打印到屏幕\n");
         }
+        close(pfd[0]);
     }
     exit(0);
 }
