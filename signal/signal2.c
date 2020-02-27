@@ -1,4 +1,8 @@
 #include <stdio.h>
+:q
+"q
+:q
+:q
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
