@@ -1,5 +1,6 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include<iostream>
+#include<cstdio>
+#include<cstring>
 #include<unistd.h>
 #include<pthread.h>
 void* thread_start(void* arg){
@@ -11,14 +12,16 @@ void* thread_start(void* arg){
 }
 int main(){
     pthread_t tid;
-    char buf[] = "hahahhahaha";
+    char buf[] = "哈哈哈哈";
     int ret = pthread_create(&tid, NULL, thread_start, (void*)buf);
     if(ret){
-        printf("thread create error:%d\n", ret);
+        fprintf(stderr, "pthread_create: %s\n", strerror(ret));//strerror函数
+        //perror("pthread_create:");//如果置全局的errno, 则可以直接用perror, 
+        //但pthread_create并不会改变全局的errno, 而是将errno返回
         return -1;
     }
     while(1){
-        printf("I am main thread:%p\n", tid);
+        printf("我是主线程:%p\n", tid);
         sleep(1);
     }
     return 0;
