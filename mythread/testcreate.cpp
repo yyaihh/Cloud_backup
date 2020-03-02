@@ -4,10 +4,8 @@
 #include<unistd.h>
 #include<pthread.h>
 void* thread_start(void* arg){
-    while(1){
-        printf("主线程向我传递了一个参数:%s\n", (char*)arg);
-        sleep(1);
-    }
+    sleep(1);
+    printf("ID:%p,主线程向我传递了一个参数:%s\n", pthread_self(), (char*)arg);
     return NULL;
 }
 int main(){
@@ -20,9 +18,7 @@ int main(){
         //但pthread_create并不会改变全局的errno, 而是将errno返回
         return -1;
     }
-    while(1){
-        printf("我是主线程\n");
-        sleep(1);
-    }
+    printf("我是主线程, ID:%p, 创建的线程ID:%p\n", pthread_self(), tid);
+    sleep(1);
     return 0;
 }
