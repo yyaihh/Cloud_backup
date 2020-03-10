@@ -10,7 +10,7 @@ void* producer(void* arg){
     BlockingQueue<int>* q = (BlockingQueue<int>*)arg;
     while(1){
         q->Push(1);
-        printf("生产线程%p: 我生产了一份数据\n", pthread_self());
+        //printf("生产线程%p: 我生产了一份数据\n", pthread_self());
     }
     return NULL;
 }
@@ -19,12 +19,12 @@ void* consumer(void* arg){
     int data;//从阻塞队列中拿到的数据
     while(1){
         q->Pop(&data);
-        printf("消费者线程%p: 我拿到了一份数据\n", pthread_self());
+        //printf("消费者线程%p: 我拿到了一份数据\n", pthread_self());
     }
     return NULL;
 }
 int main(){
-    BlockingQueue<int> q(10);
+    BlockingQueue<int> q;
     pthread_t consumer_tid[MAX_THR], producer_tid[MAX_THR];
     int ret;
     for(int i = 0; i < MAX_THR; ++i){
