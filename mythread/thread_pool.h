@@ -29,6 +29,7 @@ class ThreadPool{
     queue<ThreadTask> m_task_q;
     pthread_mutex_t m_mutex;
     pthread_cond_t m_pro_cond, m_con_cond;
+    bool m_exit_flag;
 
     static void* thr_start(void* arg);
 public:
@@ -38,7 +39,8 @@ public:
 };
 
 ThreadPool::ThreadPool(size_t max_count) :
-    m_max_count(max_count) {
+    m_max_count(max_count),
+    m_exit_flag(false) {
     pthread_mutex_init(&m_mutex, NULL);
     pthread_cond_init(&m_con_cond, NULL);
     pthread_cond_init(&m_pro_cond, NULL);
@@ -56,6 +58,7 @@ ThreadPool::ThreadPool(size_t max_count) :
     }
 }
 ThreadPool::~ThreadPool(){
+    m_exit_flag = true;
     pthread_mutex_destroy(&m_mutex);
     pthread_cond_destroy(&m_pro_cond);
     pthread_cond_destroy(&m_con_cond);
@@ -65,6 +68,10 @@ void* ThreadPool::thr_start(void* arg){
     while(1){
         pthread_mutex_lock(&(tp->m_mutex));
         while(tp->m_task_q.empty()){
+            if(tp->m_exit_flag) {
+                cout << "线程退出\n";
+                pthread_exit(NULL);           
+            }
             pthread_cond_wait(&(tp->m_con_cond), &(tp->m_mutex));
         }
         ThreadTask task = tp->m_task_q.front();
