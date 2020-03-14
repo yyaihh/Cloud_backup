@@ -1,16 +1,19 @@
 #include<iostream>
 using namespace std;
+template<class T>
 class singleton{
-    static int m_data;
+    static T m_data;
 public:
-    int* gey_instance(){
+    T* gey_instance(){
         return &m_data;
     }
 };
-int singleton::m_data = 0;
+template<class T>
+T singleton<T>::m_data = 0;
+
 int main(){
-    singleton a;
-    singleton b;
+    singleton<int> a;
+    singleton<int> b;
     cout << a.gey_instance() << endl;
     cout << b.gey_instance() << endl;
     return 0;
