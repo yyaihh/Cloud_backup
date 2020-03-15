@@ -10,7 +10,8 @@ using namespace std;
 int main(int argc, char* argv[]){//通过参数传入服务端需要绑定的地址信息, 也就是IP地址和端口
     //传入的是服务端自己要绑定的地址
     if(argc != 3){
-
+        cout << "输入错误\n";
+        return -1;
     }
     const char* ip_addr = argv[1];//获取IP地址
     uint16_t port_addr = atoi(argv[2]);//获取端口, 主机字节序

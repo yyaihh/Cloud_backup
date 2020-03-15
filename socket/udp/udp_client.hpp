@@ -18,7 +18,7 @@ public:
         }
         return true;
     }
-    void Addr(struct sockaddr_in* addr, const string & ip, const uint16_t port){
+    void Addr(struct sockaddr_in* addr, const string& ip, const uint16_t port){
         addr->sin_family = AF_INET;
         addr->sin_port = htons(port);
         inet_pton(AF_INET, ip.c_str(), &addr->sin_addr.s_addr);
@@ -40,7 +40,7 @@ public:
         struct sockaddr_in addr;
         socklen_t len = sizeof(struct sockaddr_in);
         int ret = recvfrom(m_sockfd, tmp, 4093, 0, (struct sockaddr*)&addr, &len);
-        //len在此处是输入输出型, 即指定了想获得多少, 还返回了实际获得了多少
+        //len在此处是输入输出型, 即指定了想获得多少, 并且还返回了实际获得了多少
         if(ret < 0){
             perror("recvfrom error");
             return false;
