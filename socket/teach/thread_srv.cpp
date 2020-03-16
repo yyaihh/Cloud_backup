@@ -18,6 +18,30 @@
 #include <stdlib.h>
 #include "tcpsocket.hpp"
 
+void *thr_start(void *arg)
+{
+    //指针在64位操作系统上是8个字节
+    long sockfd = (long)arg;//如果直接转int会数据截断报错
+
+    TcpSocket newsock;
+    newsock.SetFd(sockfd);
+
+    while(1) {
+        std::string buf;
+        bool ret = newsock.Recv(&buf);//通过新连接接收数据
+        if (ret == false) {newsock.Close(); continue;}
+        printf("client say: %s\n", buf.c_str());
+        //-----------------------------------------------------------------
+        printf("server say:");//没有带换行，因此不会自动刷新标准输出缓冲区
+        fflush(stdout); // 手动刷新标准输出缓冲区-将数据打印出来
+        buf.clear();  //清空buf这个string对象的内容
+        std::cin >> buf;
+        ret = newsock.Send(buf);//通过新连接发送数据
+        if (ret == false) {newsock.Close(); continue;}
+    }
+    newsock.Close();//这个newsock千万不能在主线程中关闭--共用同一个文件描述符表
+    return NULL;
+}
 int main(int argc, char *argv[])
 {
     if (argc != 3) {
@@ -40,23 +64,15 @@ int main(int argc, char *argv[])
             continue;//服务端不会因为一次获取的失败而退出，而是继续重新获取下一个
         }
         printf("new conn:[%s:%d]\n", cli_ip.c_str(), cli_port);
+        //****************新建连接到来,创建新线程处理************
+        
+        //这个newsock是不能取地址传入线程的；因为它是一个局部变量
+        //等到这个循环完毕，这个局部变量就会被释放掉
         pthread_t tid;
-        //newsock传值操作会new一个新对象，是为了防止传地址，而变量是一个局部变量
-        //循环完毕这个变量就被释放了，在线程中就无法使用了
-        pthread_create(&tid, NULL, thr_start, (void*)newsock);//创建线程；
-        pthread_detach(tid);
+        pthread_create(&tid, NULL, thr_start, (void*)newsock.GetFd());
+        pthread_detach(tid);//线程退出后直接自动释放资源
+
         //------------------------------------------------------------------
-        std::string buf;
-        ret = newsock.Recv(&buf);//通过新连接接收数据
-        if (ret == false) {newsock.Close(); continue;}
-        printf("client say: %s\n", buf.c_str());
-        //-----------------------------------------------------------------
-        printf("server say:");//没有带换行，因此不会自动刷新标准输出缓冲区
-        fflush(stdout); // 手动刷新标准输出缓冲区-将数据打印出来
-        buf.clear();  //清空buf这个string对象的内容
-        std::cin >> buf;
-        ret = newsock.Send(buf);//通过新连接发送数据
-        if (ret == false) {newsock.Close(); continue;}
     }
     lst_sock.Close();
     return 0;

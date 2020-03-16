@@ -15,15 +15,21 @@
 ================================================================*/
 #include <iostream>
 #include <stdlib.h>
+#include <signal.h>
 #include "tcpsocket.hpp"
 
 
+void sigcb(int signo)
+{
+    printf("连接断开收到SIGPIPE信号\n");
+}
 int main(int argc, char *argv[])
 {
     if (argc != 3) {
         printf("em: ./tcp_cli srv_ip srv_port\n");
         return -1;
     }
+    signal(SIGPIPE, sigcb);
     std::string ip = argv[1];
     uint16_t port = atoi(argv[2]);
 
@@ -34,10 +40,10 @@ int main(int argc, char *argv[])
         std::cout << "client say:";
         std::string buf;
         std::cin >> buf;
-        CHECK_RET(cli_sock.Send(buf));//当前客户端收发数据出错直接退出--
+        cli_sock.Send(buf);//当前客户端收发数据出错直接退出--
 
         buf.clear();
-        CHECK_RET(cli_sock.Recv(&buf));//正常情况下应该关闭套接字然后重新建立连接
+        cli_sock.Recv(&buf);//正常情况下应该关闭套接字然后重新建立连接
         std::cout << "server say: " << buf << std::endl;
     }
     cli_sock.Close();

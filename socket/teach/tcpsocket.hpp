@@ -21,6 +21,12 @@ class TcpSocket
     public:
         TcpSocket():_sockfd(-1){
         }
+        int GetFd() {
+            return _sockfd;
+        }
+        void SetFd(int fd) {
+            _sockfd = fd;
+        }
         //创建套接字
         bool Socket() {
             //socket(地址域， 套接字类型，协议类型)

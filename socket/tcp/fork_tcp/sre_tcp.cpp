@@ -1,6 +1,7 @@
 #include<iostream>
 #include<cstdio>
 #include<cstdlib>
+#include<sys/wait.h>
 #include"socket_tcp.hpp"
 
 /*1. 创建套接字
@@ -13,35 +14,50 @@ while(1) {
 }
 7. 关闭套接字*/
 
+void sigcb(int signo){
+    while(waitpid(-1, NULL, WNOHANG) > 0);
+}
 
 int main(int argc, char* argv[]){
     if(argc != 3){
         printf("输入错误\n");
         return -1;
     }
+    signal(SIGCHLD, sigcb);
     TcpSocket ser;
     CHECK_RET(ser.Socket());
     string ip = argv[1];
     uint16_t port = atoi(argv[2]);
     CHECK_RET(ser.Bind(ip, port));
     CHECK_RET(ser.Listen());
-    string buf;
     while(1){
         TcpSocket newsock;
         string ip;
         uint16_t port;
         bool ret = ser.Accept(&newsock, &ip, &port);
-        if(ret == false){ continue; }//服务端并不会因为一次失败而退出, 而是继续获取下一个连接
+        if(ret == false) { continue; }//失败继续获取下一个
         cout << "建立新链接,ip:" << ip << "端口号:" << port << endl;
-        ret = newsock.Recv(&buf);
-        if (ret == false) {
-            newsock.Close();
-            break;
+        pid_t pid = fork();
+        if(pid < 0){
+            perror("fork error");
+            return -1;
         }
-        cout << "client say: " << buf << endl;
-        cout << "serves say: "; 
-        getline(cin, buf);
-        ret = newsock.Send(buf);
+        if(pid == 0){
+            string buf;
+            while(1){
+                bool ret_ = newsock.Recv(&buf);
+                if (ret_ == false) { 
+                    newsock.Close();
+                    ser.Close();
+                    exit(0);
+                }
+                printf("ip[%s]:port[%d]: %s\n", ip.c_str(), port, buf.c_str());
+                cout << "serves say: "; 
+                getline(cin, buf);
+                ret = newsock.Send(buf);
+            }
+            newsock.Close();
+        }
     }
     ser.Close();
     return 0;

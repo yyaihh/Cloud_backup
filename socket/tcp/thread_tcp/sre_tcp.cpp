@@ -1,6 +1,8 @@
 #include<iostream>
 #include<cstdio>
+#include<cstring>
 #include<cstdlib>
+#include<pthread.h>
 #include"socket_tcp.hpp"
 
 /*1. 创建套接字
@@ -13,7 +15,27 @@ while(1) {
 }
 7. 关闭套接字*/
 
-
+void* thr_start(void* arg) {
+    pthread_detach(pthread_self());
+    TcpSocket* sock = (TcpSocket*)arg;
+    string buf;
+    while(1){
+        if (sock->Recv(&buf) == false) {
+            sock->Close();
+            delete sock;
+            break;
+        }
+        cout << "client say: " << buf << endl;
+        cout << "serves say: "; 
+        getline(cin, buf);
+        if(sock->Send(buf) == false){
+            sock->Close();
+            delete sock;
+            break;
+        }
+    }
+    return NULL;
+}
 int main(int argc, char* argv[]){
     if(argc != 3){
         printf("输入错误\n");
@@ -27,21 +49,18 @@ int main(int argc, char* argv[]){
     CHECK_RET(ser.Listen());
     string buf;
     while(1){
-        TcpSocket newsock;
+        TcpSocket* newsock = new TcpSocket;
         string ip;
         uint16_t port;
-        bool ret = ser.Accept(&newsock, &ip, &port);
+        bool ret = ser.Accept(newsock, &ip, &port);
         if(ret == false){ continue; }//服务端并不会因为一次失败而退出, 而是继续获取下一个连接
         cout << "建立新链接,ip:" << ip << "端口号:" << port << endl;
-        ret = newsock.Recv(&buf);
-        if (ret == false) {
-            newsock.Close();
-            break;
+        pthread_t tid;
+        if(pthread_create(&tid, NULL, thr_start, (void*)newsock)){
+            fprintf(stderr, "pthread_create: %s\n", strerror(ret));
+            delete newsock;
+            return -1;
         }
-        cout << "client say: " << buf << endl;
-        cout << "serves say: "; 
-        getline(cin, buf);
-        ret = newsock.Send(buf);
     }
     ser.Close();
     return 0;

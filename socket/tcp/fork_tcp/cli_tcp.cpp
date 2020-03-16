@@ -19,7 +19,6 @@ int main(int argc, char* argv[]){
     }
     TcpSocket cli;
     CHECK_RET(cli.Socket());
-    cli.Socket();
     string ip = argv[1];
     uint16_t port = atoi(argv[2]);
     CHECK_RET(cli.Connect(ip, port));
