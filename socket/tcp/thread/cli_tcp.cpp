@@ -14,7 +14,7 @@
 6. 关闭套接字*/
 int main(int argc, char* argv[]){
     if(argc != 3){
-        cout << "输入错误\n";
+        cout << "Should input ./cli_tcp [ip] [port]\n";
         return -1;
     }
     TcpSocket cli;
@@ -32,6 +32,5 @@ int main(int argc, char* argv[]){
         CHECK_RET(cli.Recv(&buf));
         cout << "servers say : " << buf << endl;
     }
-    cli.Close();
     return 0;
 }

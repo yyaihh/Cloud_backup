@@ -21,7 +21,6 @@ void* thr_start(void* arg) {
     string buf;
     while(1){
         if (sock->Recv(&buf) == false) {
-            sock->Close();
             delete sock;
             break;
         }
@@ -29,7 +28,6 @@ void* thr_start(void* arg) {
         cout << "serves say: "; 
         getline(cin, buf);
         if(sock->Send(buf) == false){
-            sock->Close();
             delete sock;
             break;
         }
@@ -38,7 +36,7 @@ void* thr_start(void* arg) {
 }
 int main(int argc, char* argv[]){
     if(argc != 3){
-        printf("输入错误\n");
+        cout << "Should input ./ser_tcp [ip] [port]\n";
         return -1;
     }
     TcpSocket ser;
@@ -54,7 +52,7 @@ int main(int argc, char* argv[]){
         uint16_t port;
         bool ret = ser.Accept(newsock, &ip, &port);
         if(ret == false){ continue; }//服务端并不会因为一次失败而退出, 而是继续获取下一个连接
-        cout << "建立新链接,ip:" << ip << "端口号:" << port << endl;
+        printf("new connection[ip: %s][port: %d]\n", ip.c_str(), port);
         pthread_t tid;
         if(pthread_create(&tid, NULL, thr_start, (void*)newsock)){
             fprintf(stderr, "pthread_create: %s\n", strerror(ret));
@@ -62,6 +60,5 @@ int main(int argc, char* argv[]){
             return -1;
         }
     }
-    ser.Close();
     return 0;
 }

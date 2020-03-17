@@ -1,5 +1,6 @@
 #include<iostream>
 #include<string>
+#include<cstdio>
 #include<unistd.h> //close包含在这个头文件中
 #include<netinet/in.h>//地址结构体
 #include<arpa/inet.h>//字节序转换接口
@@ -15,6 +16,7 @@ class TcpSocket{
     void Addr(struct sockaddr_in*, const string&, const uint16_t);
 public:
     TcpSocket():m_sockfd(-1){}
+    ~TcpSocket(){Close();}
     bool Socket();
     bool Bind(const string& ip, const uint16_t port);
     bool Listen(int backlog = BACKLOG);
@@ -106,23 +108,18 @@ bool TcpSocket::Recv(string* buf){
 }
 
 bool TcpSocket::Send(const string& data){
-    /*ssize_t ret = send(m_sockfd, data.c_str(), data.size(), 0);
+    ssize_t ret = send(m_sockfd, data.c_str(), data.size(), 0);
     if(ret < 0){
         perror("send error");
         return false;
-    }*/
+    }
     //send有这个问题, 比如send有想发送100字节的数据, 但实际可
     //能一次发送的数据并没有100字节, 所以需要循环发送, 如下
-    size_t slen = 0, ret = 0;
+    /*size_t slen = 0;
     size_t size = data.size();
     while(slen < size) {
-        ret = send(m_sockfd, &data[slen], size - slen, 0);
-        if(ret < 0){
-            perror("send error");
-            return false;
-        }
-        slen += ret;
-    }
+        slen += send(m_sockfd, &data[slen], size - slen, 0);
+    }*/
     return true;
 }
 bool TcpSocket::Close(){

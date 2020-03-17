@@ -20,7 +20,7 @@ void sigcb(int signo){
 
 int main(int argc, char* argv[]){
     if(argc != 3){
-        printf("输入错误\n");
+        cout << "Should input ./ser_main [ip] [port]\n";
         return -1;
     }
     signal(SIGCHLD, sigcb);
@@ -36,7 +36,7 @@ int main(int argc, char* argv[]){
         uint16_t port;
         bool ret = ser.Accept(&newsock, &ip, &port);
         if(ret == false) { continue; }//失败继续获取下一个
-        cout << "建立新链接,ip:" << ip << "端口号:" << port << endl;
+        printf("new connection[ip: %s][port: %d]\n", ip.c_str(), port);  
         pid_t pid = fork();
         if(pid < 0){
             perror("fork error");
@@ -47,8 +47,6 @@ int main(int argc, char* argv[]){
             while(1){
                 bool ret_ = newsock.Recv(&buf);
                 if (ret_ == false) { 
-                    newsock.Close();
-                    ser.Close();
                     exit(0);
                 }
                 printf("ip[%s]:port[%d]: %s\n", ip.c_str(), port, buf.c_str());
@@ -56,9 +54,7 @@ int main(int argc, char* argv[]){
                 getline(cin, buf);
                 ret = newsock.Send(buf);
             }
-            newsock.Close();
         }
     }
-    ser.Close();
     return 0;
 }

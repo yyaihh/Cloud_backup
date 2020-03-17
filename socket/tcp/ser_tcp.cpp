@@ -16,7 +16,7 @@ while(1) {
 
 int main(int argc, char* argv[]){
     if(argc != 3){
-        printf("输入错误\n");
+        cout << "Should input ./ser_tcp [ip] [port]\n";
         return -1;
     }
     TcpSocket ser;
@@ -32,10 +32,9 @@ int main(int argc, char* argv[]){
         uint16_t port;
         bool ret = ser.Accept(&newsock, &ip, &port);
         if(ret == false){ continue; }//服务端并不会因为一次失败而退出, 而是继续获取下一个连接
-        cout << "建立新链接,ip:" << ip << "端口号:" << port << endl;
+        printf("new connection[ip: %s][port: %d]\n", ip.c_str(), port);  
         ret = newsock.Recv(&buf);
         if (ret == false) {
-            newsock.Close();
             break;
         }
         cout << "client say: " << buf << endl;
@@ -43,6 +42,5 @@ int main(int argc, char* argv[]){
         getline(cin, buf);
         ret = newsock.Send(buf);
     }
-    ser.Close();
     return 0;
 }
