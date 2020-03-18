@@ -12,18 +12,18 @@ using namespace std;
 class TcpSocket{
     int m_sockfd;
 
-    void Addr(struct sockaddr_in*, const string&, const uint16_t);
+    void Addr(struct sockaddr_in*, const string&, const uint16_t) const;
 public:
     TcpSocket():m_sockfd(-1){}
     ~TcpSocket(){Close();}
     bool Socket();
-    bool Bind(const string& ip, const uint16_t port);
-    bool Listen(int backlog = BACKLOG);
-    bool Connect(const string& ip, const uint16_t port);
-    bool Accept(TcpSocket* sock, string* ip = nullptr, uint16_t* port = nullptr);
-    bool Recv(string* buf);
-    bool Send(const string& data);
-    bool Close();
+    bool Bind(const string& ip, const uint16_t port) const;
+    bool Listen(int backlog = BACKLOG) const;
+    bool Connect(const string& ip, const uint16_t port) const;
+    bool Accept(TcpSocket* sock, string* ip = nullptr, uint16_t* port = nullptr) const;
+    bool Recv(string* buf) const;
+    bool Send(const string& data) const;
+    bool Close() const;
 };
 
 bool TcpSocket::Socket(){
@@ -34,12 +34,12 @@ bool TcpSocket::Socket(){
     }
     return true;
 }
-void TcpSocket::Addr(struct sockaddr_in* addr, const string& ip, const uint16_t port){
+void TcpSocket::Addr(struct sockaddr_in* addr, const string& ip, const uint16_t port) const{
     addr->sin_family = AF_INET;
     addr->sin_port = htons(port);
     inet_pton(AF_INET, ip.c_str(), &addr->sin_addr.s_addr);
 }
-bool TcpSocket::Bind(const string& ip, const uint16_t port){
+bool TcpSocket::Bind(const string& ip, const uint16_t port) const{
     struct sockaddr_in addr;
     Addr(&addr, ip, port);
     socklen_t len = sizeof(struct sockaddr_in);
@@ -51,8 +51,8 @@ bool TcpSocket::Bind(const string& ip, const uint16_t port){
     return true;
 }
 
-bool TcpSocket::Listen(int backog){
-    int ret = listen(m_sockfd, backog);
+bool TcpSocket::Listen(int backlog) const{
+    int ret = listen(m_sockfd, backlog);
     if(ret < 0){
         perror("listen error");
         return false;
@@ -60,7 +60,7 @@ bool TcpSocket::Listen(int backog){
     return true;
 }
 
-bool TcpSocket::Connect(const string& ip, const uint16_t port){
+bool TcpSocket::Connect(const string& ip, const uint16_t port) const{
     struct sockaddr_in addr;//定义一个IPv4的地址结构
     Addr(&addr, ip, port);//向这个结构中绑定地址与端口
     socklen_t len = sizeof(struct sockaddr_in);
@@ -73,7 +73,7 @@ bool TcpSocket::Connect(const string& ip, const uint16_t port){
     return true;
 }
 
-bool TcpSocket::Accept(TcpSocket* sock, string* ip, uint16_t* port){
+bool TcpSocket::Accept(TcpSocket* sock, string* ip, uint16_t* port) const{
     struct sockaddr_in cli_addr;
     socklen_t len = sizeof(struct sockaddr_in);
     int newsockfd = accept(m_sockfd, (struct sockaddr*)&cli_addr, &len);
@@ -91,7 +91,7 @@ bool TcpSocket::Accept(TcpSocket* sock, string* ip, uint16_t* port){
     return true;
 }
 
-bool TcpSocket::Recv(string* buf){
+bool TcpSocket::Recv(string* buf) const{
     char tmp[4096] = { 0 };
     ssize_t ret = recv(m_sockfd, tmp, 4095, 0);
     if(ret < 0){
@@ -105,13 +105,12 @@ bool TcpSocket::Recv(string* buf){
     buf->assign(tmp, ret);
     return true;
 }
-
-bool TcpSocket::Send(const string& data){
-    /*ssize_t ret = send(m_sockfd, data.c_str(), data.size(), 0);
-    if(ret < 0){
-        perror("send error");
-        return false;
-    }*/
+bool TcpSocket::Send(const string& data) const{
+     /*ssize_t ret = send(m_sockfd, data.c_str(), data.size(), 0);
+      *if(ret < 0){
+      *    perror("send error");
+      *    return false;
+      *}*/
     //send有这个问题, 比如send有想发送100字节的数据, 但实际可
     //能一次发送的数据并没有100字节, 所以需要循环发送, 如下
     size_t slen = 0, ret = 0;
@@ -120,14 +119,13 @@ bool TcpSocket::Send(const string& data){
         ret = send(m_sockfd, &data[slen], size - slen, 0);
         if(ret < 0){
             perror("send error");
-            return false;
+            return false;                                                  
         }
-        slen += ret;
+        slen += ret;                              
     }
     return true;
 }
-bool TcpSocket::Close(){
+bool TcpSocket::Close()const {
     close(m_sockfd);
-    m_sockfd = -1;
     return true;
 }
