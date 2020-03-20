@@ -15,7 +15,6 @@ class TcpSocket{
     void Addr(struct sockaddr_in*, const string&, const uint16_t) const;
 public:
     TcpSocket():m_sockfd(-1){}
-    ~TcpSocket(){Close();}
     bool Socket();
     bool Bind(const string& ip, const uint16_t port) const;
     bool Listen(int backlog = BACKLOG) const;

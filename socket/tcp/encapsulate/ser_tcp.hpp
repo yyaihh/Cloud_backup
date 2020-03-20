@@ -13,16 +13,13 @@ class TcpServer{
     uint16_t m_port;
 public:
     TcpServer(const string ip, const uint16_t port);
-    ~TcpServer();
+    ~TcpServer(){m_listen_sock.Close();}
     bool Start(Handler handler);
 };
 
 TcpServer::TcpServer(const string ip, const uint16_t port): 
     m_ip(ip), m_port(port) {
     m_listen_sock.Socket();
-}
-TcpServer::~TcpServer(){
-    m_listen_sock.Close();
 }
 bool TcpServer::Start(Handler handler){
     //1.绑定ip与端口号

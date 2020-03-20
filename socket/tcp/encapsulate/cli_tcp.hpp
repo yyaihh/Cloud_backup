@@ -13,15 +13,13 @@ class TcpClient {
     uint16_t m_port;
 public:
     TcpClient(const string ip, const uint16_t port);
-    ~TcpClient();
+    ~TcpClient(){m_ts.Close();}
     bool Strat(Handler1 handler1, Handler2 handler2);
 };
 
 TcpClient::TcpClient(const string ip, const uint16_t port):
     m_ip(ip), m_port(port) {
     m_ts.Socket();
-}
-TcpClient::~TcpClient(){
     m_ts.Close();
 }
 bool TcpClient::Strat(Handler1 handler1, Handler2 handler2){

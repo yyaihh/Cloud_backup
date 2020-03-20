@@ -15,7 +15,6 @@ class TcpSocket{
     void Addr(struct sockaddr_in*, const string&, const uint16_t) const;
 public:
     TcpSocket():m_sockfd(-1){}
-    ~TcpSocket(){Close();}
     bool Socket();
     bool Bind(const string& ip, const uint16_t port) const;
     bool Listen(int backlog = BACKLOG) const;
@@ -82,8 +81,9 @@ bool TcpSocket::Accept(TcpSocket* sock, string* ip, uint16_t* port) const{
         return false;
     }
     sock->m_sockfd = newsockfd;
+    char str[INET_ADDRSTRLEN];//IPv6用INET6_ADDRSTRLEN
     if(ip != nullptr){
-        *ip = inet_ntoa(cli_addr.sin_addr);
+       *ip = inet_ntop(AF_INET, &cli_addr.sin_addr, str, sizeof(str));
     }
     if(port != nullptr){
         *port = ntohs(cli_addr.sin_port);
