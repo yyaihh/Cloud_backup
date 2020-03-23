@@ -1,9 +1,14 @@
 //多进程
 #include<iostream>
 #include<functional>
+#include<sys/wait.h>
 #include"socket_tcp.hpp"
 
 typedef std::function<void (const string&, string*, const string&, const uint16_t&)> Handler;
+
+void sigcb(int signo){
+    while(waitpid(-1, NULL, WNOHANG) > 0);
+}
 
 class TcpProcessServer{
     TcpSocket m_listen_scok;
@@ -20,6 +25,7 @@ public:
 
 TcpProcessServer::TcpProcessServer(const string ip, const uint16_t port):
     m_ip(ip), m_port(port) {
+    signal(SIGCHLD, sigcb);
     m_listen_scok.Socket();
 }
 

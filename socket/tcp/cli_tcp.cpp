@@ -33,5 +33,6 @@ int main(int argc, char* argv[]){
         CHECK_RET(cli.Recv(&buf));
         cout << "servers say : " << buf << endl;
     }
+    cli.Close();
     return 0;
 }

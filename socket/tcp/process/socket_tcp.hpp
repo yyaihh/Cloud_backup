@@ -15,11 +15,11 @@ class TcpSocket{
     void Addr(struct sockaddr_in*, const string&, const uint16_t) const;
 public:
     TcpSocket():m_sockfd(-1){}
-    ~TcpSocket(){Close();}
     bool Socket();
+    int GetFd();
     bool Bind(const string& ip, const uint16_t port) const;
     bool Listen(int backlog = BACKLOG) const;
-    bool Connect(const string& ip, const uint16_t port) const;
+    bool Connect(const string ip, const uint16_t port) const;
     bool Accept(TcpSocket* sock, string* ip = nullptr, uint16_t* port = nullptr) const;
     bool Recv(string* buf) const;
     bool Send(const string& data) const;
@@ -33,6 +33,9 @@ bool TcpSocket::Socket(){
         return false;
     }
     return true;
+}
+int TcpSocket::GetFd(){
+    return m_sockfd;
 }
 void TcpSocket::Addr(struct sockaddr_in* addr, const string& ip, const uint16_t port) const{
     addr->sin_family = AF_INET;
@@ -60,7 +63,7 @@ bool TcpSocket::Listen(int backlog) const{
     return true;
 }
 
-bool TcpSocket::Connect(const string& ip, const uint16_t port) const{
+bool TcpSocket::Connect(const string ip, const uint16_t port) const{
     struct sockaddr_in addr;//定义一个IPv4的地址结构
     Addr(&addr, ip, port);//向这个结构中绑定地址与端口
     socklen_t len = sizeof(struct sockaddr_in);

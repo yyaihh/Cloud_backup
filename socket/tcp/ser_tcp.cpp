@@ -42,5 +42,6 @@ int main(int argc, char* argv[]){
         getline(cin, buf);
         ret = newsock.Send(buf);
     }
+    ser.Close();
     return 0;
 }
