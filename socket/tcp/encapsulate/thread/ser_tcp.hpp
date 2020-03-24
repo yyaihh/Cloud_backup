@@ -52,6 +52,7 @@ bool TcpThreadServer::Start(Handler handler, int backlog){
         Data* data = new Data;
         data->m_handler = handler;
         if(m_listen_sock.Accept(&data->m_newsock, &data->m_ip, &data->m_port) == false){
+            delete data;
             continue;
         }
         printf("new connection[ip: %s][port: %d]\n", data->m_ip.c_str(), data->m_port);
