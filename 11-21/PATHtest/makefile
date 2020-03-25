@@ -1,3 +1,0 @@
-hello:hello_world.c
-	gcc $^ -o $@
-
