@@ -3,11 +3,11 @@
 using namespace std;
 void helloworld(const httplib::Request& req, httplib::Response& resp){
     cout << "method: " << req.method << endl;
-    cout << "path: " << req.method << endl;
+    cout << "path: " << req.path << endl;
     cout << "body: " << req.body << endl;
 
     resp.status = 200;
-    resp.body = "<html><body><h1><Hello World</h1></body></html>";
+    resp.body = "<html><body><h1>Hello World</h1></body></html>";
     resp.set_header("Content-Type", "text/html");
     resp.set_header("Content-Length", to_string(resp.body.size()));
     return;

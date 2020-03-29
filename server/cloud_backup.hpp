@@ -14,8 +14,7 @@ using namespace std;
 namespace cloud_sys{
 
 #define NOTHOT_TIME 10 //最后一次访问时间在10秒以上的
-#define INTERVAL_TIME 30 //非热点检测每30秒一次
-class DataManagement;
+#define INTERVAL_TIME 10 //非热点检测每30秒一次
 class FileUtil{ //文件工具类
 public:
     static bool Read(const string& name, string* body);//从文件中读取内容
@@ -43,6 +42,7 @@ public:
     bool IsExists(const string& name);//判断文件是否存在
     bool IsCompress(const string& name);//判断文件是否已经压缩
     bool UncompressList(vector<string>* list);//获取未压缩文件列表
+    bool GetGzName(const string& src, string* dst);
     bool Insert(const string& src, const string& dst);//插入/更新数据
     bool GetAllFileName(vector<string>* list);
     bool Storage();//数据更新/改变后保存到磁盘
@@ -193,6 +193,14 @@ bool DataManagement::Insert(const string& src, const string& dst){
     return true;
 }
 
+bool DataManagement::GetGzName(const string& src, string* dst){
+    auto it = m_file_list.find(src);
+    if(it == m_file_list.end()){
+        return false;
+    }
+    *dst = it->second;
+    return true;
+}
 bool DataManagement::GetAllFileName(vector<string>* list){
     pthread_rwlock_rdlock(&m_rwlock);
     list->reserve(m_file_list.size());
@@ -240,8 +248,10 @@ DataManagement data_manage;
 bool NotHot::Start(){
     //需要一个循环, 是一个持续的过程, 每隔一段时间判断一下
     while(1){
+        cout << "检测一次\n";
         vector<string> list;
         data_manage.UncompressList(&list);
+        cout << "有" << list.size() << "个非热点文件\n";
         for(auto& i : list){
             if(IsNotHot(Server::m_s_FileBackupPath + i)){
                 string src_name_path = Server::m_s_FileBackupPath + i;
@@ -253,7 +263,7 @@ bool NotHot::Start(){
                 }
             }
         }
-        sleep(5);
+        sleep(INTERVAL_TIME);
     }
     return true;
 }
@@ -270,6 +280,65 @@ bool NotHot::IsNotHot(const string& name){
         return true;
     }
     return false;
+}
+
+bool Server::Start(){
+    m_server.Put("/(.*)", FileUpload);
+    m_server.Get("/list", List);
+    m_server.Get("/download/(.*)", Download);
+
+    m_server.listen("0.0.0.0", 9000);//搭建tcp服务器, 进行http数据接收处理以及响应
+    return 0;
+}
+
+//req.method 解析出的请求方法
+//req.path 解析出的请求的资源路径, 就是url中域名/之后的一部分
+//req.headers 请求的头部信息键值对
+//req.body 请求的正文数据
+
+void Server::FileUpload(const httplib::Request& req, httplib::Response& resp){
+    string pathname = Server::m_s_FileBackupPath;
+    pathname += req.matches[1];
+    //pathname : 路径+文件名, matches[1]就是需要备份的文件名
+    FileUtil::Write(pathname, resp.body);
+    resp.status = 200;//默认就是200, 不写也行
+}
+
+void Server::List(const httplib::Request& req, httplib::Response& resp){
+    vector<string> list;
+    data_manage.GetAllFileName(&list);
+    stringstream buf;
+    buf << "<html><body><hr />";
+    for(auto& i : list){
+        buf << "<a href='/download/" << i << "'>" << i << "</a>";
+        buf << "<hr />";
+        //buf << "<a href='/download/a.txt'> a.txt </a";
+    }
+    buf << "<hr /></body></html>";
+    resp.set_content(buf.str().c_str(), buf.str().size(), "text/html");
+    //resp.body = buf.str();
+    //resp.set_header("Content-Type", "text/html") ;
+    resp.status = 200;
+}
+
+void Server::Download(const httplib::Request& req, httplib::Response& resp){
+    if(data_manage.IsExists(req.matches[1]) == false){
+        resp.status = 404;
+        return;
+    }
+    string pathname = Server::m_s_FileBackupPath;
+    pathname += req.matches[1];
+    if(data_manage.IsCompress(req.matches[1]) == true){//文件已经被压缩
+        string gzname;
+        data_manage.GetGzName(req.matches[1], &gzname);
+        string gzpathname = NotHot::m_s_ComFilePath + gzname;
+        CompressUtil::UnCompress(gzpathname, pathname);
+        data_manage.Insert(req.matches[1], req.matches[1]);
+        unlink(gzpathname.c_str());
+    }
+    FileUtil::Read(pathname, &resp.body);
+    resp.set_header("Content-Type", "application/octet-stream");
+    resp.status = 200;
 }
 
 }
