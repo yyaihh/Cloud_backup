@@ -301,6 +301,7 @@ void Server::FileUpload(const httplib::Request& req, httplib::Response& resp){
     pathname += req.matches[1];
     //pathname : 路径+文件名, matches[1]就是需要备份的文件名
     FileUtil::Write(pathname, resp.body);
+    data_manage.Insert(req.matches[1], req.matches[1]);
     resp.status = 200;//默认就是200, 不写也行
 }
 
