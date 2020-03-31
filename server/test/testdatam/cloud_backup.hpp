@@ -11,10 +11,14 @@
 #include<pthread.h>
 #include"httplib.h"
 using namespace std;
-namespace cloud_sys{
 
+#define BACKUP_PATH "./backup/"
+#define GZBACKUP_PATH "./gzbackup/"
+#define LIST_PATHNAME "./list"
+namespace cloud_sys{
 #define NOTHOT_TIME 10 //最后一次访问时间在10秒以上的
 #define INTERVAL_TIME 10 //非热点检测每30秒一次
+
 class FileUtil{ //文件工具类
 public:
     static bool Read(const string& name, string* body);//从文件中读取内容
@@ -31,7 +35,6 @@ class DataManagement{ //数据管理模块
     unordered_map<string, string> m_file_list;//数据管理容器
     pthread_rwlock_t m_rwlock;
 public:
-    static string m_s_BackupFileList;//保存在磁盘中的文件列表文件的名称
 
     DataManagement(){
         pthread_rwlock_init(&m_rwlock, NULL);
@@ -48,17 +51,13 @@ public:
     bool Storage();//数据更新/改变后保存到磁盘
     bool InitLoad();//程序启动时加载磁盘中的数据
 };
-string DataManagement::m_s_BackupFileList = "./list";
 
 class NotHot{
     bool IsNotHot(const string& name);//判断文件是否为热点文件
 public:
-    
-    static string m_s_ComFilePath;//压缩后文件在磁盘中的存储路径
     bool Start();//开始压缩接口
     string getComFilePath();
 };
-string NotHot::m_s_ComFilePath = "./gzbackup/";
 
 class Server{
     httplib::Server m_server;
@@ -69,11 +68,8 @@ class Server{
     //文件下载处理函数
     static void Download(const httplib::Request& req, httplib::Response& resp);
 public:
-    static string m_s_FileBackupPath;//上传的备份文件在磁盘中的路径
-
     bool Start();//启动网络通信模块接口
 };
-string Server::m_s_FileBackupPath = "./backup/";
 
 bool FileUtil::Read(const string& name, string* body){
     ifstream fin(name, ifstream::binary);
@@ -218,13 +214,13 @@ bool DataManagement::Storage(){//持久化存储
         tmp << e.first << ' ' << e.second << "\r\n";
     }
     pthread_rwlock_unlock(&m_rwlock);
-    FileUtil::Write(m_s_BackupFileList, tmp.str());
+    FileUtil::Write(LIST_PATHNAME, tmp.str());
     return true;
 }
 
 bool DataManagement::InitLoad(){//启动时从磁盘加载数据
     string buf;
-    if(FileUtil::Read(m_s_BackupFileList, &buf) == false){
+    if(FileUtil::Read(LIST_PATHNAME, &buf) == false){
         return false;
     }
     //boost::split(vector<string>& list, string& str, " ", boost::token_compress_off);
@@ -251,11 +247,11 @@ bool NotHot::Start(){
         cout << "检测一次\n";
         vector<string> list;
         data_manage.UncompressList(&list);
-        cout << "有" << list.size() << "个非热点文件\n";
+        cout << "有" << list.size() << "个未压缩文件\n";
         for(auto& i : list){
-            if(IsNotHot(Server::m_s_FileBackupPath + i)){
-                string src_name_path = Server::m_s_FileBackupPath + i;
-                string dst_name_path = NotHot::m_s_ComFilePath + i;
+            if(IsNotHot(BACKUP_PATH + i)){
+                string src_name_path = BACKUP_PATH + i;
+                string dst_name_path = GZBACKUP_PATH + i;
                 dst_name_path += ".gz";
                 if(CompressUtil::Compress(src_name_path, dst_name_path)){
                     data_manage.Insert(i, i + ".gz");//更新
@@ -297,7 +293,7 @@ bool Server::Start(){
 //req.body 请求的正文数据
 
 void Server::FileUpload(const httplib::Request& req, httplib::Response& resp){
-    string pathname = Server::m_s_FileBackupPath;
+    string pathname = BACKUP_PATH;
     pathname += req.matches[1];
     //pathname : 路径+文件名, matches[1]就是需要备份的文件名
     FileUtil::Write(pathname, resp.body);
@@ -327,12 +323,12 @@ void Server::Download(const httplib::Request& req, httplib::Response& resp){
         resp.status = 404;
         return;
     }
-    string pathname = Server::m_s_FileBackupPath;
+    string pathname = BACKUP_PATH;
     pathname += req.matches[1];
     if(data_manage.IsCompress(req.matches[1]) == true){//文件已经被压缩
         string gzname;
         data_manage.GetGzName(req.matches[1], &gzname);
-        string gzpathname = NotHot::m_s_ComFilePath + gzname;
+        string gzpathname = GZBACKUP_PATH + gzname;
         CompressUtil::UnCompress(gzpathname, pathname);
         data_manage.Insert(req.matches[1], req.matches[1]);
         unlink(gzpathname.c_str());

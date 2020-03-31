@@ -4,8 +4,8 @@ using namespace std;
 
 void not_compress(){
     cloud_sys::NotHot nh;
-    if(boost::filesystem::exists(nh.m_s_ComFilePath) == false){
-        boost::filesystem::create_directory(nh.m_s_ComFilePath);
+    if(boost::filesystem::exists(GZBACKUP_PATH) == false){
+        boost::filesystem::create_directory(GZBACKUP_PATH);
 
     }
     nh.Start();
