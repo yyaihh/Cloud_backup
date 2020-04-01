@@ -220,9 +220,21 @@ bool DataManagement::Storage(){//持久化存储
 
 bool DataManagement::InitLoad(){//启动时从磁盘加载数据
     string buf;
-    if(FileUtil::Read(LIST_PATHNAME, &buf) == false){
-        return false;
+    if(boost::filesystem::exists(BACKUP_PATH) == false){
+        boost::filesystem::create_directory(BACKUP_PATH);               
     }
+    if(boost::filesystem::exists(GZBACKUP_PATH) == false){
+         boost::filesystem::create_directory(GZBACKUP_PATH);            
+    }
+    if(FileUtil::Read(LIST_PATHNAME, &buf) == false){
+        cout << "尝试生成" << LIST_PATHNAME << endl; 
+        if(FileUtil::Write(LIST_PATHNAME,"") == false){
+            cout << "生成失败!\n";
+            return false;
+        }
+        cout << "生成成功\n";
+    }
+
     //boost::split(vector<string>& list, string& str, " ", boost::token_compress_off);
     //boost::token_compress_on
     vector<string> list;
@@ -240,13 +252,17 @@ bool DataManagement::InitLoad(){//启动时从磁盘加载数据
     return true;
 }
 
-DataManagement data_manage;
+DataManagement g_data_manage;
 bool NotHot::Start(){
     //需要一个循环, 是一个持续的过程, 每隔一段时间判断一下
+    if(g_data_manage.InitLoad() == false){
+        cout << "InitLoad failed!\n";
+        return false;
+    }
     while(1){
         cout << "检测一次\n";
         vector<string> list;
-        data_manage.UncompressList(&list);
+        g_data_manage.UncompressList(&list);
         cout << "有" << list.size() << "个未压缩文件\n";
         for(auto& i : list){
             if(IsNotHot(BACKUP_PATH + i)){
@@ -254,7 +270,7 @@ bool NotHot::Start(){
                 string dst_name_path = GZBACKUP_PATH + i;
                 dst_name_path += ".gz";
                 if(CompressUtil::Compress(src_name_path, dst_name_path)){
-                    data_manage.Insert(i, i + ".gz");//更新
+                    g_data_manage.Insert(i, i + ".gz");//更新
                     unlink(src_name_path.c_str());
                 }
             }
@@ -296,14 +312,14 @@ void Server::FileUpload(const httplib::Request& req, httplib::Response& resp){
     string pathname = BACKUP_PATH;
     pathname += req.matches[1];
     //pathname : 路径+文件名, matches[1]就是需要备份的文件名
-    FileUtil::Write(pathname, resp.body);
-    data_manage.Insert(req.matches[1], req.matches[1]);
+    FileUtil::Write(pathname, req.body);
+    g_data_manage.Insert(req.matches[1], req.matches[1]);
     resp.status = 200;//默认就是200, 不写也行
 }
 
 void Server::List(const httplib::Request& req, httplib::Response& resp){
     vector<string> list;
-    data_manage.GetAllFileName(&list);
+    g_data_manage.GetAllFileName(&list);
     stringstream buf;
     buf << "<html><body><hr />";
     for(auto& i : list){
@@ -319,18 +335,18 @@ void Server::List(const httplib::Request& req, httplib::Response& resp){
 }
 
 void Server::Download(const httplib::Request& req, httplib::Response& resp){
-    if(data_manage.IsExists(req.matches[1]) == false){
+    if(g_data_manage.IsExists(req.matches[1]) == false){
         resp.status = 404;
         return;
     }
     string pathname = BACKUP_PATH;
     pathname += req.matches[1];
-    if(data_manage.IsCompress(req.matches[1]) == true){//文件已经被压缩
+    if(g_data_manage.IsCompress(req.matches[1]) == true){//文件已经被压缩
         string gzname;
-        data_manage.GetGzName(req.matches[1], &gzname);
+        g_data_manage.GetGzName(req.matches[1], &gzname);
         string gzpathname = GZBACKUP_PATH + gzname;
         CompressUtil::UnCompress(gzpathname, pathname);
-        data_manage.Insert(req.matches[1], req.matches[1]);
+        g_data_manage.Insert(req.matches[1], req.matches[1]);
         unlink(gzpathname.c_str());
     }
     FileUtil::Read(pathname, &resp.body);
