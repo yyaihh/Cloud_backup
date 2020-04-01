@@ -9,7 +9,8 @@
 #include"httplib.h"
 //#include<openssl/md5.h>
 using namespace std;
-#define STORAGE_FILE "./list.backup"
+#define STORAGE_FILE "list.backup"
+#define LSITENFILELIST "./ListenFileList"
 
 
 class FileUtil { //文件工具类
@@ -19,10 +20,10 @@ public:
 };
 
 class DataManager {//数据管理模块
-	string m_stroe_filename;//磁盘中持久化存储文件信息的文件名称
+	string m_ListenFileListfile;//磁盘中持久化存储文件信息的文件名称
 	unordered_map<string, string> m_backup_list;
 public:
-	DataManager(const string& filename) : m_stroe_filename(filename) {}
+	DataManager(const string& filename) : m_ListenFileListfile(filename) {}
 	bool Insert(const string& key, const string& val);
 	bool GetEtag(const string& filename, string* etag);//通过文件名获取文件原来的etag
 	bool Storage();//持久化存储
@@ -94,13 +95,22 @@ bool DataManager::Storage() {
 	for (auto& i : m_backup_list) {
 		buf << i.first << ' ' << i.second << endl;
 	}
-	return FileUtil::Write(m_stroe_filename, buf.str());
+	return FileUtil::Write(m_ListenFileListfile, buf.str());
 }
 
 bool DataManager::InitLoad() {
 	string body;
-	if (FileUtil::Read(m_stroe_filename, &body) == false) {
-		return false;
+	if (boost::filesystem::exists(LSITENFILELIST) == false) {
+		boost::filesystem::create_directory(LSITENFILELIST);
+	}
+	if (FileUtil::Read(LSITENFILELIST + m_ListenFileListfile, &body) == false) {
+		cout << "尝试生成" << m_ListenFileListfile << endl;
+		if (FileUtil::Write(LSITENFILELIST + m_ListenFileListfile, "") == false) {
+			cout << "生成失败!\n";
+			return false;
+		}
+		cout << "生成成功\n";
+
 	}
 	vector<string> list;
 	boost::split(list, body, boost::is_any_of("\n"), boost::token_compress_on);
@@ -117,7 +127,7 @@ bool DataManager::InitLoad() {
 	return true;
 }
 
-DataManager g_data_manage(STORAGE_FILE);
+DataManager g_data_manage(string(LSITENFILELIST) + STORAGE_FILE);
 
 bool CloudClient::GetBackupFileList(vector<string>* list) {
 	//进行目录监控, 获取指定目录下的所有文件名称
@@ -131,8 +141,8 @@ bool CloudClient::GetBackupFileList(vector<string>* list) {
 		if (boost::filesystem::is_directory(it->status())) {//是目录
 			continue;
 		}
-		string pathname = begin->path().string();
-		string name = begin->path().filename().string();
+		string pathname = it->path().string();//路径+文件名
+		string name = it->path().filename().string();//文件名
 		string cur_etag, old_etag;
 		GetEtag(pathname, &cur_etag);
 		g_data_manage.GetEtag(name, &old_etag);
@@ -160,11 +170,12 @@ void CloudClient::Start() {
 		FileUtil::Read(pathname, &body);
 		httplib::Client client(m_server_ip, m_server_port);
 		string req_path = '/' + name;
-		auto rsp = client.Put(req_path.c_str(), body, "application/octet-stream");
-		if (rsp == nullptr || rsp->status != 200) {
-			cout << "fail" << name << "backup failed\n";
+		auto resp = client.Put(req_path.c_str(), body, "application/octet-stream");
+		if (resp == nullptr || resp->status != 200) {
+			cout << name << " backup failed\n";
 			continue;//失败了等下次循环还会继续备份
 		}
+		cout << name << "backup successful\n";
 		string etag;
 		GetEtag(pathname, &etag);
 		g_data_manage.Insert(name, etag);//更新
